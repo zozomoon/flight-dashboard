@@ -141,8 +141,8 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        {bestPrice?.url ? (
-          <a href={bestPrice.url} target="_blank" rel="noopener noreferrer"
+        {(bestPrice?.booking_url || bestPrice?.url) ? (
+          <a href={bestPrice.booking_url || bestPrice.url} target="_blank" rel="noopener noreferrer"
              className="rounded-xl p-5 block group cursor-pointer transition-all hover:scale-[1.02]"
              style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
             <p className="text-sm text-gray-400 mb-1 flex items-center gap-1">
