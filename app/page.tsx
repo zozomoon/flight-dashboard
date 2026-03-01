@@ -21,6 +21,7 @@ interface PriceRecord {
   origin: string
   destination: string
   url: string
+  booking_url: string
   is_deal: boolean
 }
 
@@ -238,7 +239,8 @@ export default function Dashboard() {
                 <th className="text-left py-2 px-3">Compagnie</th>
                 <th className="text-left py-2 px-3">Départ</th>
                 <th className="text-left py-2 px-3">Trajet</th>
-                <th className="text-center py-2 px-3">Lien</th>
+                <th className="text-center py-2 px-3">Source</th>
+                <th className="text-center py-2 px-3">Réserver</th>
               </tr>
             </thead>
             <tbody>
@@ -268,6 +270,13 @@ export default function Dashboard() {
                     {p.url && (
                       <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
                         Voir
+                      </a>
+                    )}
+                  </td>
+                  <td className="py-2 px-3 text-center">
+                    {p.booking_url && (
+                      <a href={p.booking_url} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300">
+                        Réserver
                       </a>
                     )}
                   </td>
