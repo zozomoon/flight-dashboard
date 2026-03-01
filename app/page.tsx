@@ -263,8 +263,8 @@ export default function Dashboard() {
                     </span>
                   </td>
                   <td className="py-2 px-3 text-right font-mono font-bold" style={{ color: p.price <= PRICE_THRESHOLD ? 'var(--green)' : p.price <= 500 ? 'var(--orange)' : 'var(--text)' }}>
-                    {p.url ? (
-                      <a href={p.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    {(p.booking_url || p.url) ? (
+                      <a href={p.booking_url || p.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
                         {p.price}€
                       </a>
                     ) : (
@@ -284,8 +284,8 @@ export default function Dashboard() {
                   </td>
                   <td className="py-2 px-3 text-center">
                     {p.booking_url && (
-                      <a href={p.booking_url} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300">
-                        Réserver
+                      <a href={p.booking_url} target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:text-emerald-300 font-medium">
+                        Réserver ↗
                       </a>
                     )}
                   </td>
