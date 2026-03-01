@@ -69,14 +69,12 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData()
-    // Auto-refresh toutes les 5 minutes
     const interval = setInterval(fetchData, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
   async function fetchData() {
     try {
-      // Récupérer les derniers prix
       const { data: allPrices, error: pricesError } = await supabase
         .from('price_history')
         .select('*')
@@ -87,18 +85,11 @@ export default function Dashboard() {
 
       if (allPrices && allPrices.length > 0) {
         setPrices(allPrices)
-
-        // Meilleur prix
         const best = allPrices.reduce((min, p) => p.price < min.price ? p : min, allPrices[0])
         setBestPrice(best)
-
-        // Deals sous le seuil
         setDeals(allPrices.filter(p => p.is_deal))
-
-        // Dernier scan
         setLastScan(new Date(allPrices[0].timestamp).toLocaleString('fr-FR'))
 
-        // Données pour le graphique (regrouper par heure)
         const byDate = new Map<string, number[]>()
         allPrices.forEach(p => {
           const date = new Date(p.timestamp).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit' })
@@ -136,19 +127,10 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto">
-      {/* Header */}
       <header className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">
-          Flight Tracker - Guyane
-        </h1>
-        <p className="text-gray-400">
-          Paris/Luxembourg → Cayenne (CAY) | Seuil: {PRICE_THRESHOLD}€ A/R
-        </p>
-        {lastScan && (
-          <p className="text-sm text-gray-500 mt-1">
-            Dernier scan: {lastScan}
-          </p>
-        )}
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">Flight Tracker - Guyane</h1>
+        <p className="text-gray-400">Paris/Luxembourg → Cayenne (CAY) | Seuil: {PRICE_THRESHOLD}€ A/R</p>
+        {lastScan && <p className="text-sm text-gray-500 mt-1">Dernier scan: {lastScan}</p>}
       </header>
 
       {error && (
@@ -157,21 +139,35 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="rounded-xl p-5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
-          <p className="text-sm text-gray-400 mb-1">Meilleur prix</p>
-          <p className="text-3xl font-bold" style={{ color: bestPrice && bestPrice.price <= PRICE_THRESHOLD ? 'var(--green)' : 'var(--orange)' }}>
-            {bestPrice ? `${bestPrice.price}€` : 'N/A'}
-          </p>
-          {bestPrice && <p className="text-xs text-gray-500 mt-1">via {sourceLabel(bestPrice.source)}</p>}
-        </div>
+        {bestPrice?.url ? (
+          <a href={bestPrice.url} target="_blank" rel="noopener noreferrer"
+             className="rounded-xl p-5 block group cursor-pointer transition-all hover:scale-[1.02]"
+             style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <p className="text-sm text-gray-400 mb-1 flex items-center gap-1">
+              Meilleur prix
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-400">↗</span>
+            </p>
+            <p className="text-3xl font-bold" style={{ color: bestPrice.price <= PRICE_THRESHOLD ? 'var(--green)' : 'var(--orange)' }}>
+              {bestPrice.price}€
+            </p>
+            <p className="text-xs text-gray-500 mt-1 group-hover:text-blue-400 transition-colors">
+              via {sourceLabel(bestPrice.source)} — {bestPrice.airline !== 'N/A' ? bestPrice.airline : 'Voir l\'offre'} →
+            </p>
+          </a>
+        ) : (
+          <div className="rounded-xl p-5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
+            <p className="text-sm text-gray-400 mb-1">Meilleur prix</p>
+            <p className="text-3xl font-bold" style={{ color: bestPrice && bestPrice.price <= PRICE_THRESHOLD ? 'var(--green)' : 'var(--orange)' }}>
+              {bestPrice ? `${bestPrice.price}€` : 'N/A'}
+            </p>
+            {bestPrice && <p className="text-xs text-gray-500 mt-1">via {sourceLabel(bestPrice.source)}</p>}
+          </div>
+        )}
 
         <div className="rounded-xl p-5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
           <p className="text-sm text-gray-400 mb-1">Deals &lt; {PRICE_THRESHOLD}€</p>
-          <p className="text-3xl font-bold" style={{ color: deals.length > 0 ? 'var(--green)' : 'var(--muted)' }}>
-            {deals.length}
-          </p>
+          <p className="text-3xl font-bold" style={{ color: deals.length > 0 ? 'var(--green)' : 'var(--muted)' }}>{deals.length}</p>
           <p className="text-xs text-gray-500 mt-1">trouvé(s)</p>
         </div>
 
@@ -192,7 +188,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Price Chart */}
       {chartData.length > 0 && (
         <div className="rounded-xl p-5 mb-8" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
           <h2 className="text-lg font-semibold mb-4">Evolution des prix</h2>
@@ -201,10 +196,7 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="#333" />
               <XAxis dataKey="date" stroke="#666" fontSize={12} />
               <YAxis stroke="#666" fontSize={12} domain={['auto', 'auto']} />
-              <Tooltip
-                contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
-                labelStyle={{ color: '#999' }}
-              />
+              <Tooltip contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }} labelStyle={{ color: '#999' }} />
               <ReferenceLine y={PRICE_THRESHOLD} stroke="#22c55e" strokeDasharray="5 5" label={{ value: `${PRICE_THRESHOLD}€`, fill: '#22c55e', fontSize: 12 }} />
               <Line type="monotone" dataKey="minPrice" stroke="#3b82f6" strokeWidth={2} dot={false} name="Prix min" />
               <Line type="monotone" dataKey="avgPrice" stroke="#666" strokeWidth={1} dot={false} name="Prix moyen" strokeDasharray="3 3" />
@@ -213,7 +205,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Deals Alert */}
       {deals.length > 0 && (
         <div className="rounded-xl p-5 mb-8" style={{ background: '#052e16', border: '1px solid #166534' }}>
           <h2 className="text-lg font-semibold mb-4 text-green-400">Deals trouvés!</h2>
@@ -235,7 +226,6 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Latest Prices Table */}
       <div className="rounded-xl p-5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
         <h2 className="text-lg font-semibold mb-4">Derniers relevés de prix</h2>
         <div className="overflow-x-auto">
@@ -263,7 +253,13 @@ export default function Dashboard() {
                     </span>
                   </td>
                   <td className="py-2 px-3 text-right font-mono font-bold" style={{ color: p.price <= PRICE_THRESHOLD ? 'var(--green)' : p.price <= 500 ? 'var(--orange)' : 'var(--text)' }}>
-                    {p.price}€
+                    {p.url ? (
+                      <a href={p.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                        {p.price}€
+                      </a>
+                    ) : (
+                      <>{p.price}€</>
+                    )}
                   </td>
                   <td className="py-2 px-3">{p.airline}</td>
                   <td className="py-2 px-3 text-gray-400">{p.departure_date}</td>
@@ -282,7 +278,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Footer */}
       <footer className="mt-8 text-center text-sm text-gray-500">
         <p>Scan automatique toutes les 2h via GitHub Actions</p>
         <p className="mt-1">Critères: Départ 15-30 mars 2026 | Retour +45j | Budget &lt; {PRICE_THRESHOLD}€</p>
