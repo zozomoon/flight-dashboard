@@ -155,6 +155,10 @@ export default function Dashboard() {
             <p className="text-xs text-gray-500 mt-1 group-hover:text-blue-400 transition-colors">
               via {sourceLabel(bestPrice.source)} — {bestPrice.airline !== 'N/A' ? bestPrice.airline : 'Voir l\'offre'} →
             </p>
+            <p className="text-xs text-gray-400 mt-1">
+              {bestPrice.departure_date !== 'N/A' && `${bestPrice.departure_date}`}
+              {bestPrice.return_date !== 'N/A' && ` → ${bestPrice.return_date}`}
+            </p>
           </a>
         ) : (
           <div className="rounded-xl p-5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
@@ -215,7 +219,10 @@ export default function Dashboard() {
                 <div>
                   <span className="text-2xl font-bold text-green-400">{deal.price}€</span>
                   <span className="text-sm text-gray-400 ml-3">{deal.airline} | {deal.origin} → CAY</span>
-                  <span className="text-xs text-gray-500 ml-2">{deal.departure_date}</span>
+                  <span className="text-xs text-gray-500 ml-2">
+                    {deal.departure_date !== 'N/A' && deal.departure_date}
+                    {deal.return_date !== 'N/A' && ` → ${deal.return_date}`}
+                  </span>
                 </div>
                 <a href={deal.url} target="_blank" rel="noopener noreferrer"
                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition-colors">
@@ -238,6 +245,7 @@ export default function Dashboard() {
                 <th className="text-right py-2 px-3">Prix</th>
                 <th className="text-left py-2 px-3">Compagnie</th>
                 <th className="text-left py-2 px-3">Départ</th>
+                <th className="text-left py-2 px-3">Retour</th>
                 <th className="text-left py-2 px-3">Trajet</th>
                 <th className="text-center py-2 px-3">Source</th>
                 <th className="text-center py-2 px-3">Réserver</th>
@@ -265,6 +273,7 @@ export default function Dashboard() {
                   </td>
                   <td className="py-2 px-3">{p.airline}</td>
                   <td className="py-2 px-3 text-gray-400">{p.departure_date}</td>
+                  <td className="py-2 px-3 text-gray-400">{p.return_date}</td>
                   <td className="py-2 px-3 text-gray-400">{p.origin} → {p.destination}</td>
                   <td className="py-2 px-3 text-center">
                     {p.url && (
