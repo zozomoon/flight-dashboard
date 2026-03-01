@@ -70,12 +70,14 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchData()
+    // Auto-refresh toutes les 5 minutes
     const interval = setInterval(fetchData, 5 * 60 * 1000)
     return () => clearInterval(interval)
   }, [])
 
   async function fetchData() {
     try {
+      // Récupérer les derniers prix
       const { data: allPrices, error: pricesError } = await supabase
         .from('price_history')
         .select('*')
@@ -86,11 +88,18 @@ export default function Dashboard() {
 
       if (allPrices && allPrices.length > 0) {
         setPrices(allPrices)
+
+        // Meilleur prix
         const best = allPrices.reduce((min, p) => p.price < min.price ? p : min, allPrices[0])
         setBestPrice(best)
+
+        // Deals sous le seuil
         setDeals(allPrices.filter(p => p.is_deal))
+
+        // Dernier scan
         setLastScan(new Date(allPrices[0].timestamp).toLocaleString('fr-FR'))
 
+        // Données pour le graphique (regrouper par heure)
         const byDate = new Map<string, number[]>()
         allPrices.forEach(p => {
           const date = new Date(p.timestamp).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit' })
@@ -128,10 +137,19 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen p-4 md:p-8 max-w-6xl mx-auto">
+      {/* Header */}
       <header className="mb-8">
-        <h1 className="text-2xl md:text-3xl font-bold mb-2">Flight Tracker - Guyane</h1>
-        <p className="text-gray-400">Paris/Luxembourg → Cayenne (CAY) | Seuil: {PRICE_THRESHOLD}€ A/R</p>
-        {lastScan && <p className="text-sm text-gray-500 mt-1">Dernier scan: {lastScan}</p>}
+        <h1 className="text-2xl md:text-3xl font-bold mb-2">
+          Flight Tracker - Guyane
+        </h1>
+        <p className="text-gray-400">
+          Paris/Luxembourg → Cayenne (CAY) | Seuil: {PRICE_THRESHOLD}€ A/R
+        </p>
+        {lastScan && (
+          <p className="text-sm text-gray-500 mt-1">
+            Dernier scan: {lastScan}
+          </p>
+        )}
       </header>
 
       {error && (
@@ -140,6 +158,7 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         {(bestPrice?.booking_url || bestPrice?.url) ? (
           <a href={bestPrice.booking_url || bestPrice.url} target="_blank" rel="noopener noreferrer"
@@ -155,9 +174,10 @@ export default function Dashboard() {
             <p className="text-xs text-gray-500 mt-1 group-hover:text-blue-400 transition-colors">
               via {sourceLabel(bestPrice.source)} — {bestPrice.airline !== 'N/A' ? bestPrice.airline : 'Voir l\'offre'} →
             </p>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-yellow-500/70 mt-1">
               {bestPrice.departure_date !== 'N/A' && `${bestPrice.departure_date}`}
               {bestPrice.return_date !== 'N/A' && ` → ${bestPrice.return_date}`}
+              {' '}(prix Skyscanner peut différer)
             </p>
           </a>
         ) : (
@@ -172,7 +192,9 @@ export default function Dashboard() {
 
         <div className="rounded-xl p-5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
           <p className="text-sm text-gray-400 mb-1">Deals &lt; {PRICE_THRESHOLD}€</p>
-          <p className="text-3xl font-bold" style={{ color: deals.length > 0 ? 'var(--green)' : 'var(--muted)' }}>{deals.length}</p>
+          <p className="text-3xl font-bold" style={{ color: deals.length > 0 ? 'var(--green)' : 'var(--muted)' }}>
+            {deals.length}
+          </p>
           <p className="text-xs text-gray-500 mt-1">trouvé(s)</p>
         </div>
 
@@ -193,6 +215,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Price Chart */}
       {chartData.length > 0 && (
         <div className="rounded-xl p-5 mb-8" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
           <h2 className="text-lg font-semibold mb-4">Evolution des prix</h2>
@@ -201,7 +224,10 @@ export default function Dashboard() {
               <CartesianGrid strokeDasharray="3 3" stroke="#333" />
               <XAxis dataKey="date" stroke="#666" fontSize={12} />
               <YAxis stroke="#666" fontSize={12} domain={['auto', 'auto']} />
-              <Tooltip contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }} labelStyle={{ color: '#999' }} />
+              <Tooltip
+                contentStyle={{ background: '#1a1a1a', border: '1px solid #333', borderRadius: '8px' }}
+                labelStyle={{ color: '#999' }}
+              />
               <ReferenceLine y={PRICE_THRESHOLD} stroke="#22c55e" strokeDasharray="5 5" label={{ value: `${PRICE_THRESHOLD}€`, fill: '#22c55e', fontSize: 12 }} />
               <Line type="monotone" dataKey="minPrice" stroke="#3b82f6" strokeWidth={2} dot={false} name="Prix min" />
               <Line type="monotone" dataKey="avgPrice" stroke="#666" strokeWidth={1} dot={false} name="Prix moyen" strokeDasharray="3 3" />
@@ -210,6 +236,7 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Deals Alert */}
       {deals.length > 0 && (
         <div className="rounded-xl p-5 mb-8" style={{ background: '#052e16', border: '1px solid #166534' }}>
           <h2 className="text-lg font-semibold mb-4 text-green-400">Deals trouvés!</h2>
@@ -219,10 +246,7 @@ export default function Dashboard() {
                 <div>
                   <span className="text-2xl font-bold text-green-400">{deal.price}€</span>
                   <span className="text-sm text-gray-400 ml-3">{deal.airline} | {deal.origin} → CAY</span>
-                  <span className="text-xs text-gray-500 ml-2">
-                    {deal.departure_date !== 'N/A' && deal.departure_date}
-                    {deal.return_date !== 'N/A' && ` → ${deal.return_date}`}
-                  </span>
+                  <span className="text-xs text-gray-500 ml-2">{deal.departure_date}</span>
                 </div>
                 <a href={deal.url} target="_blank" rel="noopener noreferrer"
                    className="px-4 py-2 bg-green-600 hover:bg-green-700 rounded-lg text-sm font-medium transition-colors">
@@ -234,6 +258,7 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* Latest Prices Table */}
       <div className="rounded-xl p-5" style={{ background: 'var(--card)', border: '1px solid var(--border)' }}>
         <h2 className="text-lg font-semibold mb-4">Derniers relevés de prix</h2>
         <div className="overflow-x-auto">
@@ -245,7 +270,6 @@ export default function Dashboard() {
                 <th className="text-right py-2 px-3">Prix</th>
                 <th className="text-left py-2 px-3">Compagnie</th>
                 <th className="text-left py-2 px-3">Départ</th>
-                <th className="text-left py-2 px-3">Retour</th>
                 <th className="text-left py-2 px-3">Trajet</th>
                 <th className="text-center py-2 px-3">Source</th>
                 <th className="text-center py-2 px-3">Réserver</th>
@@ -263,22 +287,15 @@ export default function Dashboard() {
                     </span>
                   </td>
                   <td className="py-2 px-3 text-right font-mono font-bold" style={{ color: p.price <= PRICE_THRESHOLD ? 'var(--green)' : p.price <= 500 ? 'var(--orange)' : 'var(--text)' }}>
-                    {(p.booking_url || p.url) ? (
-                      <a href={p.booking_url || p.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                        {p.price}€
-                      </a>
-                    ) : (
-                      <>{p.price}€</>
-                    )}
+                    {p.price}€
                   </td>
                   <td className="py-2 px-3">{p.airline}</td>
                   <td className="py-2 px-3 text-gray-400">{p.departure_date}</td>
-                  <td className="py-2 px-3 text-gray-400">{p.return_date}</td>
                   <td className="py-2 px-3 text-gray-400">{p.origin} → {p.destination}</td>
                   <td className="py-2 px-3 text-center">
                     {p.url && (
                       <a href={p.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
-                        Voir
+                        Source
                       </a>
                     )}
                   </td>
@@ -296,6 +313,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Footer */}
       <footer className="mt-8 text-center text-sm text-gray-500">
         <p>Scan automatique toutes les 2h via GitHub Actions</p>
         <p className="mt-1">Critères: Départ 15-30 mars 2026 | Retour +45j | Budget &lt; {PRICE_THRESHOLD}€</p>
